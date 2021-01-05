@@ -12,9 +12,9 @@ uniform vec3 materialDiffuse;
 uniform vec3 materialSpecular;
 uniform float materialShininess;
 
+uniform bool texturing;
 uniform sampler2D diffuseTex;
 uniform sampler2D specularTex;
-uniform bool texturing;
 
 in vec3 position; // interpolowana pozycja
 in vec3 normal; // interpolowany normal
@@ -29,8 +29,8 @@ void main()
 	vec3 viewDir = normalize( vec3( 0.0, 0.0, 0.0 ) - position );
 	vec3 halfDir = normalize( lightDir + viewDir );
 
-	vec3 ambient = lightAmbient * materialAmbient;
-	//vec3 ambient = lightAmbient * vec3(texture(diffuseTex, texCoords));
+	//vec3 ambient = lightAmbient * materialAmbient;
+	vec3 ambient = lightAmbient * vec3(texture(diffuseTex, texCoords));
 
 	vec3 diffuse = lightDiffuse * max( dot( lightDir, norm ), 0.0 );
 

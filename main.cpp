@@ -1,10 +1,12 @@
-#include <GL/glew.h>
+﻿#include <GL/glew.h>
 #include <GLFW/glfw3.h>
 
 #include <glm/glm.hpp>
 #include <glm/ext.hpp>
 #include <glm/ext/matrix_transform.hpp>
+
 #include <IL/il.h>
+#include "texture.h"
 
 #include <iostream>
 
@@ -13,6 +15,7 @@
 
 #include "time.cpp"
 #include "camera.cpp"
+#include "terrain.h"
 
 using namespace std;
 using namespace glm;
@@ -22,16 +25,25 @@ using namespace glm;
 #define ANTI_ALIASING_SAMPLES 4
 #define TITLE "pwwg-terrain M. Biernat, A. Hosumbek"
 
-//******************************************************************************************
-const std::string modelName = "models/dino.obj";
+#define NUM_OF_TEX_OBJ 2
 
+//******************************************************************************************
+
+Time frameTime;
+Camera camera(static_cast<float>(WIDTH) / HEIGHT);
+MousePosition mousePosition(WIDTH, HEIGHT);
+
+bool wireframe = false;
+
+Shader* shader;
+
+Terrain* terrain;
 Model* model;
 
-GLuint texObj[2];
+GLuint texObj[NUM_OF_TEX_OBJ];
 
 mat4 projMatrix;
 mat4 viewMatrix;
-mat4 modelMatrix;
 
 // parametry swiatla
 glm::vec4 lightPosition = glm::vec4(0.0f, 0.0f, 10.0f, 1.0f); // pozycja w ukladzie swiata
@@ -45,14 +57,9 @@ glm::vec3 materialDiffuse = glm::vec3(0.34615f, 0.3143f, 0.0903f);
 glm::vec3 materialSpecular = glm::vec3(0.797357, 0.723991, 0.208006);
 float shininess = 83.2f;
 
-bool wireframe = false; // czy rysowac siatke (true) czy wypelnienie (false)
+
 glm::vec3 rotationAngles = glm::vec3(0.0, -45.0, 0.0); // katy rotacji wokol poszczegolnych osi
-
 glm::vec3 modelScale = glm::vec3(1.0f, 1.0f, 1.0f);
-
-Time frameTime;
-Camera camera(static_cast<float>(WIDTH) / HEIGHT);
-MousePosition mousePosition(WIDTH, HEIGHT);
 
 //******************************************************************************************
 
@@ -63,9 +70,10 @@ void mouseCallback(GLFWwindow* window, double xpos, double ypos);
 
 void glShowInfo();
 void processInput(GLFWwindow* window);
-
 void setupTextures();
-void loadTexture(GLuint tex, const wchar_t* filename);
+void setupObjects();
+void cleanup();
+void render();
 
 int main()
 {
@@ -116,24 +124,18 @@ int main()
 	glfwSwapInterval(1);	// v-sync on
 	glClearColor(0.5f, 0.5f, 0.5f, 1.0f);
 
+
+	shader = new Shader("shaders/vertex.vert", "shaders/fragment.frag");
+
 	setupTextures();
+	setupObjects();
 
-	model = new Model(modelName);
 
-	vec3 extent = abs(model->getBBmax() - model->getBBmin());
-	float maxExtent = glm::max(glm::max(extent.x, extent.y), extent.z);
-	modelScale = vec3(7.0 / maxExtent);
-
-	Shader shader("shaders/vertex.vert", "shaders/fragment.frag");
-
-	// glowna petla programu
 	while (!glfwWindowShouldClose(window))
 	{
 		frameTime.update(glfwGetTime());
 
 		processInput(window);
-
-		// ---------------------------------------------------------------
 
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -142,59 +144,16 @@ int main()
 		else
 			glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
-		modelMatrix = mat4(1.0f);
-
+		projMatrix = camera.perspective();
 		viewMatrix = camera.lookAt();
 
-		shader.use();
-
-		shader.setMat4("projectionMatrix", camera.perspective());
-		shader.setMat4("viewMatrix", viewMatrix);
-
-		vec4 lightPos = modelMatrix * lightPosition;
-		shader.setVec4("lightPosition", lightPos);
-
-		float rot = 0.5f;
-
-		modelMatrix = scale(modelMatrix, modelScale);
-		modelMatrix = rotate(modelMatrix, radians(rotationAngles.z), vec3(0.0f, 0.0f, 1.0f));
-		modelMatrix = rotate(modelMatrix, radians(rotationAngles.y += rot), vec3(0.0f, 1.0f, 0.0f));
-		modelMatrix = rotate(modelMatrix, radians(rotationAngles.x), vec3(1.0f, 0.0f, 0.0f));
-		modelMatrix = translate(modelMatrix, -model->getCentroid());
-
-		shader.setMat4("modelMatrix", modelMatrix);
-
-		shader.setVec3("lightAmbient", lightAmbient);
-		shader.setVec3("lightDiffuse", lightDiffuse);
-		shader.setVec3("lightSpecular", lightSpecular);
-
-		shader.setVec3("materialAmbient", materialAmbient);
-		shader.setVec3("materialDiffuse", materialDiffuse);
-		shader.setVec3("materialSpecular", materialSpecular);
-		shader.setFloat("materialShininess", shininess);
-
-		shader.setInt("diffuseTex", 0);
-		glActiveTexture(GL_TEXTURE0 + 0);
-		glBindTexture(GL_TEXTURE_2D, texObj[0]);
-
-		shader.setInt("specularTex", 1);
-		glActiveTexture(GL_TEXTURE0 + 1);
-		glBindTexture(GL_TEXTURE_2D, texObj[1]);
-
-		shader.setBool("texturing", (model->hasTextureCoords()) ? 1 : 0);
-
-		model->draw();
-
-		// ---------------------------------------------------------------
+		render();
 
 		glfwSwapBuffers(window);
 		glfwPollEvents();
 	}
 
-	glDeleteProgram(shader.ID);
-	glDeleteTextures(2, texObj);
-
-	delete model;
+	cleanup();
 
 	glfwDestroyWindow(window);
 	glfwTerminate();
@@ -251,66 +210,107 @@ void processInput(GLFWwindow* window)
 		camera.move(Camera::Right, frameTime.deltaTime);
 }
 
-/*------------------------------------------------------------------------------------------
-** funkcja ladujaca tekstury
-**------------------------------------------------------------------------------------------*/
 void setupTextures()
 {
-	glGenTextures(2, texObj);
+	glGenTextures(NUM_OF_TEX_OBJ, texObj);
 
-	glBindTexture(GL_TEXTURE_2D, texObj[0]);
-
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-
-	loadTexture(GL_TEXTURE_2D, L"textures/diffuse.png");
-
-	glBindTexture(GL_TEXTURE_2D, texObj[1]);
-
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-
-	loadTexture(GL_TEXTURE_2D, L"textures/specular.png");
-
-	glBindTexture(GL_TEXTURE_2D, 0);
+	Texture::loadTexture(texObj[0], L"textures/diffuse.png");
+	Texture::loadTexture(texObj[1], L"textures/specular.png");
 }
 
-
-/*------------------------------------------------------------------------------------------
-** funkcja ladujaca teksture z pliku
-** tex - typ tekstury
-** filename - nazwa pliku z tekstura do zaladowania
-**------------------------------------------------------------------------------------------*/
-void loadTexture(GLuint tex, const wchar_t* filename)
+void setupObjects()
 {
-	ilInit();
+	terrain = new Terrain(128, 25.0f, 0.5f);
 
-	ilEnable(IL_ORIGIN_SET);
-	ilOriginFunc(IL_ORIGIN_LOWER_LEFT);
+	model = new Model("models/monkey.obj");
 
-	ILuint imageName;
+	vec3 extent = abs(model->getBBmax() - model->getBBmin());
+	float maxExtent = glm::max(glm::max(extent.x, extent.y), extent.z);
+	modelScale = vec3(7.0 / maxExtent);
+}
 
-	ilGenImages(1, &imageName);
-	ilBindImage(imageName);
+void cleanup()
+{
+	glDeleteProgram(shader->ID);
+	delete(shader);
+	
+	glDeleteTextures(NUM_OF_TEX_OBJ, texObj);
 
-	if (!ilLoadImage(filename))
-	{
-		ILenum err = ilGetError();
-		std::cerr << "Blad: " << err << std::endl;
-		std::cerr << "      " << ilGetString(err) << std::endl;
+	delete(terrain);
+	delete(model);
+}
 
-		ilBindImage(0);
-		ilDeleteImages(1, &imageName);
+void render()
+{
+	mat4 modelMatrix = mat4(1.0f);
 
-		exit(1);
-	}
+	shader->use();
 
-	glTexImage2D(tex, 0, ilGetInteger(IL_IMAGE_FORMAT), ilGetInteger(IL_IMAGE_WIDTH), ilGetInteger(IL_IMAGE_HEIGHT), 0, ilGetInteger(IL_IMAGE_FORMAT), ilGetInteger(IL_IMAGE_TYPE), ilGetData());
+	shader->setMat4("projectionMatrix", projMatrix);
+	shader->setMat4("viewMatrix", viewMatrix);
 
-	ilBindImage(0);
-	ilDeleteImages(1, &imageName);
+	float rot = 0.5f;
+
+	modelMatrix = scale(modelMatrix, modelScale);
+	modelMatrix = rotate(modelMatrix, radians(rotationAngles.z), vec3(0.0f, 0.0f, 1.0f));
+	modelMatrix = rotate(modelMatrix, radians(rotationAngles.y += rot), vec3(0.0f, 1.0f, 0.0f));
+	modelMatrix = rotate(modelMatrix, radians(rotationAngles.x), vec3(1.0f, 0.0f, 0.0f));
+	modelMatrix = translate(modelMatrix, -model->getCentroid());
+	modelMatrix = translate(modelMatrix, vec3(0.0f, 2.5f, 0.0f));
+
+	vec4 lightPos = modelMatrix * lightPosition;
+	shader->setVec4("lightPosition", lightPos);
+
+	shader->setMat4("modelMatrix", modelMatrix);
+
+	shader->setVec3("lightAmbient", lightAmbient);
+	shader->setVec3("lightDiffuse", lightDiffuse);
+	shader->setVec3("lightSpecular", lightSpecular);
+
+	shader->setVec3("materialAmbient", materialAmbient);
+	shader->setVec3("materialDiffuse", materialDiffuse);
+	shader->setVec3("materialSpecular", materialSpecular);
+	shader->setFloat("materialShininess", shininess);
+
+	shader->setInt("diffuseTex", 0);
+	glActiveTexture(GL_TEXTURE0 + 0);
+	glBindTexture(GL_TEXTURE_2D, texObj[0]);
+
+	shader->setInt("specularTex", 1);
+	glActiveTexture(GL_TEXTURE0 + 1);
+	glBindTexture(GL_TEXTURE_2D, texObj[1]);
+
+	shader->setBool("texturing", (model->hasTextureCoords()) ? 1 : 0);
+
+	model->draw();
+
+	shader->use();
+
+	shader->setMat4("projectionMatrix", projMatrix);
+	shader->setMat4("viewMatrix", viewMatrix);
+
+	shader->setVec4("lightPosition", mat4(1) * lightPos);
+
+	shader->setMat4("modelMatrix", terrain->modelMatrix);
+
+	shader->setVec3("lightAmbient", lightAmbient);
+	shader->setVec3("lightDiffuse", lightDiffuse);
+	shader->setVec3("lightSpecular", lightSpecular);
+
+	shader->setVec3("materialAmbient", materialAmbient);
+	shader->setVec3("materialDiffuse", materialDiffuse);
+	shader->setVec3("materialSpecular", materialSpecular);
+	shader->setFloat("materialShininess", shininess);
+
+	shader->setInt("diffuseTex", 0);
+	glActiveTexture(GL_TEXTURE0 + 0);
+	glBindTexture(GL_TEXTURE_2D, texObj[0]);
+
+	shader->setInt("specularTex", 1);
+	glActiveTexture(GL_TEXTURE0 + 1);
+	glBindTexture(GL_TEXTURE_2D, texObj[1]);
+
+	shader->setBool("texturing", 1);
+
+	terrain->draw();
 }
