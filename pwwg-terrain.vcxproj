@@ -157,10 +157,14 @@
     <ClCompile Include="time.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="exe_dir\shaders\fragment.frag" />
-    <None Include="exe_dir\shaders\vertex.vert" />
+    <None Include="exe_dir\shaders\default.frag" />
+    <None Include="exe_dir\shaders\default.vert" />
+    <None Include="exe_dir\shaders\terrain.frag" />
+    <None Include="exe_dir\shaders\terrain.vert" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="lighting.h" />
+    <ClInclude Include="material.h" />
     <ClInclude Include="mesh.h" />
     <ClInclude Include="model.h" />
     <ClInclude Include="terrain.h" />

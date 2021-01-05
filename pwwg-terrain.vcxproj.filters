@@ -45,10 +45,16 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="exe_dir\shaders\fragment.frag">
+    <None Include="exe_dir\shaders\default.frag">
       <Filter>Shaders</Filter>
     </None>
-    <None Include="exe_dir\shaders\vertex.vert">
+    <None Include="exe_dir\shaders\default.vert">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="exe_dir\shaders\terrain.frag">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="exe_dir\shaders\terrain.vert">
       <Filter>Shaders</Filter>
     </None>
   </ItemGroup>
@@ -63,6 +69,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="terrain.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="lighting.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="material.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

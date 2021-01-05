@@ -16,6 +16,8 @@
 #include "time.cpp"
 #include "camera.cpp"
 #include "terrain.h"
+#include "lighting.h"
+#include "material.h"
 
 using namespace std;
 using namespace glm;
@@ -35,7 +37,8 @@ MousePosition mousePosition(WIDTH, HEIGHT);
 
 bool wireframe = false;
 
-Shader* shader;
+Shader* defaultShader;
+Shader* terrainShader;
 
 Terrain* terrain;
 Model* model;
@@ -45,17 +48,12 @@ GLuint texObj[NUM_OF_TEX_OBJ];
 mat4 projMatrix;
 mat4 viewMatrix;
 
-// parametry swiatla
-glm::vec4 lightPosition = glm::vec4(0.0f, 0.0f, 10.0f, 1.0f); // pozycja w ukladzie swiata
-glm::vec3 lightAmbient = glm::vec3(0.2f, 0.2f, 0.2f);
-glm::vec3 lightDiffuse = glm::vec3(1.0f, 1.0f, 1.0f);
-glm::vec3 lightSpecular = glm::vec3(1.0, 1.0, 1.0);
+//DirectLight directLight;
+PointLight pointLight(vec3(0.0f, 0.0f, 10.0f), vec3(1.0f));
+vec3 ambientLight = vec3(0.2f);
 
-// material obiektu
-glm::vec3 materialAmbient = glm::vec3(1.0f, 0.5f, 0.0f);
-glm::vec3 materialDiffuse = glm::vec3(0.34615f, 0.3143f, 0.0903f);
-glm::vec3 materialSpecular = glm::vec3(0.797357, 0.723991, 0.208006);
-float shininess = 83.2f;
+Material objectMaterial(vec3(1.0f), vec3(1.0f), 83.2f);
+Material terrainMaterial;
 
 
 glm::vec3 rotationAngles = glm::vec3(0.0, -45.0, 0.0); // katy rotacji wokol poszczegolnych osi
@@ -125,7 +123,8 @@ int main()
 	glClearColor(0.5f, 0.5f, 0.5f, 1.0f);
 
 
-	shader = new Shader("shaders/vertex.vert", "shaders/fragment.frag");
+	defaultShader = new Shader("shaders/default.vert", "shaders/default.frag");
+	terrainShader = new Shader("shaders/terrain.vert", "shaders/terrain.frag");
 
 	setupTextures();
 	setupObjects();
@@ -220,7 +219,7 @@ void setupTextures()
 
 void setupObjects()
 {
-	terrain = new Terrain(128, 25.0f, 0.5f);
+	terrain = new Terrain(128, 50.0f, 0.5f);
 
 	model = new Model("models/monkey.obj");
 
@@ -231,8 +230,10 @@ void setupObjects()
 
 void cleanup()
 {
-	glDeleteProgram(shader->ID);
-	delete(shader);
+	glDeleteProgram(defaultShader->ID);
+	glDeleteProgram(terrainShader->ID);
+	delete(defaultShader);
+	delete(terrainShader);
 	
 	glDeleteTextures(NUM_OF_TEX_OBJ, texObj);
 
@@ -242,14 +243,14 @@ void cleanup()
 
 void render()
 {
-	mat4 modelMatrix = mat4(1.0f);
+	defaultShader->use();
 
-	shader->use();
-
-	shader->setMat4("projectionMatrix", projMatrix);
-	shader->setMat4("viewMatrix", viewMatrix);
+	defaultShader->setMat4("projectionMatrix", projMatrix);
+	defaultShader->setMat4("viewMatrix", viewMatrix);
+	defaultShader->setVec3("viewPos", camera.position);
 
 	float rot = 0.5f;
+	mat4 modelMatrix = mat4(1.0f);
 
 	modelMatrix = scale(modelMatrix, modelScale);
 	modelMatrix = rotate(modelMatrix, radians(rotationAngles.z), vec3(0.0f, 0.0f, 1.0f));
@@ -258,59 +259,56 @@ void render()
 	modelMatrix = translate(modelMatrix, -model->getCentroid());
 	modelMatrix = translate(modelMatrix, vec3(0.0f, 2.5f, 0.0f));
 
-	vec4 lightPos = modelMatrix * lightPosition;
-	shader->setVec4("lightPosition", lightPos);
+	vec4 lightPos = modelMatrix * vec4(pointLight.position, 1.0f);
+	defaultShader->setMat4("modelMatrix", modelMatrix);
 
-	shader->setMat4("modelMatrix", modelMatrix);
+	defaultShader->setVec3("pointLight.position", vec3(lightPos));
+	defaultShader->setVec3("pointLight.color", pointLight.color);
+	defaultShader->setVec3("ambientLight", ambientLight);
 
-	shader->setVec3("lightAmbient", lightAmbient);
-	shader->setVec3("lightDiffuse", lightDiffuse);
-	shader->setVec3("lightSpecular", lightSpecular);
+	defaultShader->setVec3("material.diffuse", objectMaterial.diffuse);
+	defaultShader->setVec3("material.specular", objectMaterial.specular);
+	defaultShader->setFloat("material.shininess", objectMaterial.shininess);
 
-	shader->setVec3("materialAmbient", materialAmbient);
-	shader->setVec3("materialDiffuse", materialDiffuse);
-	shader->setVec3("materialSpecular", materialSpecular);
-	shader->setFloat("materialShininess", shininess);
-
-	shader->setInt("diffuseTex", 0);
+	defaultShader->setInt("diffuseTex", 0);
 	glActiveTexture(GL_TEXTURE0 + 0);
 	glBindTexture(GL_TEXTURE_2D, texObj[0]);
 
-	shader->setInt("specularTex", 1);
+	defaultShader->setInt("specularTex", 1);
 	glActiveTexture(GL_TEXTURE0 + 1);
 	glBindTexture(GL_TEXTURE_2D, texObj[1]);
 
-	shader->setBool("texturing", (model->hasTextureCoords()) ? 1 : 0);
+	defaultShader->setBool("texturing", (model->hasTextureCoords()) ? 1 : 0);
 
 	model->draw();
 
-	shader->use();
 
-	shader->setMat4("projectionMatrix", projMatrix);
-	shader->setMat4("viewMatrix", viewMatrix);
+	terrainShader->use();
 
-	shader->setVec4("lightPosition", mat4(1) * lightPos);
+	terrainShader->setMat4("projectionMatrix", projMatrix);
+	terrainShader->setMat4("viewMatrix", viewMatrix);
+	terrainShader->setVec3("viewPos", camera.position);
+	
+	terrainShader->setMat4("modelMatrix", terrain->modelMatrix);
 
-	shader->setMat4("modelMatrix", terrain->modelMatrix);
+	terrainShader->setVec3("pointLight.position", vec3(lightPos));
+	terrainShader->setVec3("pointLight.color", pointLight.color);
+	terrainShader->setVec3("ambientLight", ambientLight);
 
-	shader->setVec3("lightAmbient", lightAmbient);
-	shader->setVec3("lightDiffuse", lightDiffuse);
-	shader->setVec3("lightSpecular", lightSpecular);
+	terrainShader->setVec3("material.diffuse", terrainMaterial.diffuse);
+	terrainShader->setVec3("material.specular", terrainMaterial.specular);
+	terrainShader->setFloat("material.shininess", terrainMaterial.shininess);
 
-	shader->setVec3("materialAmbient", materialAmbient);
-	shader->setVec3("materialDiffuse", materialDiffuse);
-	shader->setVec3("materialSpecular", materialSpecular);
-	shader->setFloat("materialShininess", shininess);
+	terrainShader->setBool("texturing", true);
+	terrainShader->setVec2("tiling", vec2(8, 8));
 
-	shader->setInt("diffuseTex", 0);
+	terrainShader->setInt("diffuseTex", 0);
 	glActiveTexture(GL_TEXTURE0 + 0);
 	glBindTexture(GL_TEXTURE_2D, texObj[0]);
 
-	shader->setInt("specularTex", 1);
+	terrainShader->setInt("specularTex", 1);
 	glActiveTexture(GL_TEXTURE0 + 1);
 	glBindTexture(GL_TEXTURE_2D, texObj[1]);
-
-	shader->setBool("texturing", 1);
 
 	terrain->draw();
 }
