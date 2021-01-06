@@ -27,7 +27,7 @@ using namespace glm;
 #define ANTI_ALIASING_SAMPLES 4
 #define TITLE "pwwg-terrain M. Biernat, A. Hosumbek"
 
-#define NUM_OF_TEX_OBJ 2
+#define NUM_OF_TEX_OBJ 4
 
 //******************************************************************************************
 
@@ -217,8 +217,10 @@ void setupTextures()
 {
 	glGenTextures(NUM_OF_TEX_OBJ, texObj);
 
-	Texture::loadTexture(texObj[0], L"textures/diffuse.png");
-	Texture::loadTexture(texObj[1], L"textures/specular.png");
+	Texture::loadTexture(texObj[0], L"textures/diffuse.jpg");
+	Texture::loadTexture(texObj[1], L"textures/specular.jpg");
+	Texture::loadTexture(texObj[2], L"textures/diffuse.png");
+	Texture::loadTexture(texObj[3], L"textures/specular.png");
 }
 
 void setupObjects()
@@ -269,6 +271,9 @@ void render()
 
 	setMaterials(defaultShader, objectMaterial);
 
+	defaultShader->setBool("texturing", true);
+	defaultShader->setVec2("tiling", vec2(8, 8));
+
 	defaultShader->setInt("diffuseTex", 0);
 	glActiveTexture(GL_TEXTURE0 + 0);
 	glBindTexture(GL_TEXTURE_2D, texObj[0]);
@@ -276,9 +281,6 @@ void render()
 	defaultShader->setInt("specularTex", 1);
 	glActiveTexture(GL_TEXTURE0 + 1);
 	glBindTexture(GL_TEXTURE_2D, texObj[1]);
-
-	defaultShader->setBool("texturing", true);
-	defaultShader->setVec2("tiling", vec2(8, 8));
 
 	model->draw();
 
@@ -298,11 +300,11 @@ void render()
 
 	terrainShader->setInt("diffuseTex", 0);
 	glActiveTexture(GL_TEXTURE0 + 0);
-	glBindTexture(GL_TEXTURE_2D, texObj[0]);
+	glBindTexture(GL_TEXTURE_2D, texObj[2]);
 
 	terrainShader->setInt("specularTex", 1);
 	glActiveTexture(GL_TEXTURE0 + 1);
-	glBindTexture(GL_TEXTURE_2D, texObj[1]);
+	glBindTexture(GL_TEXTURE_2D, texObj[3]);
 
 	terrain->draw();
 }
