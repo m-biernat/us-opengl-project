@@ -34,7 +34,7 @@ void Skybox::setupBuffers()
 
 	glGenBuffers(2, buffers);
 
-	float t = 250.0f; // wielkosc szescianu
+	float t = 5000.0f; // wielkosc szescianu
 
 	GLfloat v[] =
 	{

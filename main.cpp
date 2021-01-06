@@ -191,6 +191,9 @@ void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
 
 	if (action == GLFW_PRESS && key == GLFW_KEY_F2)
 		normalDebug = !normalDebug;
+
+	if (action == GLFW_PRESS && key == GLFW_KEY_LEFT_SHIFT)
+		camera.toggleSpeed();
 }
 
 void mouseCallback(GLFWwindow* window, double xpos, double ypos)

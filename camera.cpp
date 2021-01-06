@@ -10,7 +10,8 @@ using namespace glm;
 #define CAMERA_FRONT vec3(0.0f, 0.0f, -1.0f)
 #define CAMERA_UP vec3(0.0f, 1.0f, 0.0f)
 
-#define CAMERA_SPEED 2.5f
+#define CAMERA_BASE_SPEED 5.0f
+#define CAMERA_HIGH_SPEED 20.0f
 #define CAMERA_FOV 45.0f
 
 #define CAMERA_YAW -90.0f
@@ -29,7 +30,8 @@ public:
 		front = CAMERA_FRONT;
 		up = CAMERA_UP;
 		
-		speed = CAMERA_SPEED;
+		speed = CAMERA_BASE_SPEED;
+		toggle = false;
 		fov = CAMERA_FOV;
 
 		yaw = CAMERA_YAW;
@@ -45,7 +47,7 @@ public:
 
 	mat4 perspective()
 	{
-		return glm::perspective(radians(fov), aspectRatio, 0.1f, 250.0f);
+		return glm::perspective(radians(fov), aspectRatio, 0.1f, 1000.0f);
 	}
 
 	void calculateAspectRatio(int width, int height)
@@ -95,11 +97,22 @@ public:
 		this->front = normalize(front);
 	}
 
+	void toggleSpeed()
+	{
+		if (toggle)
+			speed = CAMERA_BASE_SPEED;
+		else
+			speed = CAMERA_HIGH_SPEED;
+
+		toggle = !toggle;
+	}
+
 private:
 	vec3 front;
 	vec3 up;
 
 	float speed;
+	bool toggle;
 	float fov;
 
 	float yaw;
