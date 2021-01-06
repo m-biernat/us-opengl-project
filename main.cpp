@@ -48,8 +48,10 @@ GLuint texObj[NUM_OF_TEX_OBJ];
 mat4 projMatrix;
 mat4 viewMatrix;
 
-//DirectLight directLight;
-PointLight pointLight(vec3(0.0f, 0.0f, 10.0f), vec3(1.0f));
+DirectLight directLight(vec3(0.0f, -0.5f, -1.0f), vec3(0.1f), vec3(0.7f), vec3(0.3f));
+PointLight pointLight(vec3(0.0f, 0.0f, 10.0f), vec3(0.1f), vec3(1.0f) * 2.0f, vec3(0.7f), 1.0f, 0.09f, 0.032f);
+vec3 pointLightPosition = pointLight.position;
+
 vec3 ambientLight = vec3(0.2f);
 
 Material objectMaterial(vec3(1.0f), vec3(1.0f), 83.2f);
@@ -72,6 +74,8 @@ void setupTextures();
 void setupObjects();
 void cleanup();
 void render();
+
+void setMaterials(Shader* shader, Material& material);
 
 int main()
 {
@@ -259,16 +263,11 @@ void render()
 	modelMatrix = translate(modelMatrix, -model->getCentroid());
 	modelMatrix = translate(modelMatrix, vec3(0.0f, 2.5f, 0.0f));
 
-	vec4 lightPos = modelMatrix * vec4(pointLight.position, 1.0f);
 	defaultShader->setMat4("modelMatrix", modelMatrix);
 
-	defaultShader->setVec3("pointLight.position", vec3(lightPos));
-	defaultShader->setVec3("pointLight.color", pointLight.color);
-	defaultShader->setVec3("ambientLight", ambientLight);
+	pointLight.position = modelMatrix * vec4(pointLightPosition, 1.0f);
 
-	defaultShader->setVec3("material.diffuse", objectMaterial.diffuse);
-	defaultShader->setVec3("material.specular", objectMaterial.specular);
-	defaultShader->setFloat("material.shininess", objectMaterial.shininess);
+	setMaterials(defaultShader, objectMaterial);
 
 	defaultShader->setInt("diffuseTex", 0);
 	glActiveTexture(GL_TEXTURE0 + 0);
@@ -278,7 +277,8 @@ void render()
 	glActiveTexture(GL_TEXTURE0 + 1);
 	glBindTexture(GL_TEXTURE_2D, texObj[1]);
 
-	defaultShader->setBool("texturing", (model->hasTextureCoords()) ? 1 : 0);
+	defaultShader->setBool("texturing", true);
+	defaultShader->setVec2("tiling", vec2(8, 8));
 
 	model->draw();
 
@@ -291,13 +291,7 @@ void render()
 	
 	terrainShader->setMat4("modelMatrix", terrain->modelMatrix);
 
-	terrainShader->setVec3("pointLight.position", vec3(lightPos));
-	terrainShader->setVec3("pointLight.color", pointLight.color);
-	terrainShader->setVec3("ambientLight", ambientLight);
-
-	terrainShader->setVec3("material.diffuse", terrainMaterial.diffuse);
-	terrainShader->setVec3("material.specular", terrainMaterial.specular);
-	terrainShader->setFloat("material.shininess", terrainMaterial.shininess);
+	setMaterials(terrainShader, terrainMaterial);
 
 	terrainShader->setBool("texturing", true);
 	terrainShader->setVec2("tiling", vec2(8, 8));
@@ -311,4 +305,24 @@ void render()
 	glBindTexture(GL_TEXTURE_2D, texObj[1]);
 
 	terrain->draw();
+}
+
+void setMaterials(Shader* shader, Material& material)
+{
+	shader->setVec3("directLight.direction", directLight.direction);
+	shader->setVec3("directLight.ambient", directLight.ambient);
+	shader->setVec3("directLight.diffuse", directLight.diffuse);
+	shader->setVec3("directLight.specular", directLight.specular);
+
+	shader->setVec3("pointLight.position", pointLight.position);
+	shader->setVec3("pointLight.ambient", pointLight.ambient);
+	shader->setVec3("pointLight.diffuse", pointLight.diffuse);
+	shader->setVec3("pointLight.specular", pointLight.specular);
+	shader->setFloat("pointLight.constant", pointLight.constant);
+	shader->setFloat("pointLight.linear", pointLight.linear);
+	shader->setFloat("pointLight.quadratic", pointLight.quadratic);
+
+	shader->setVec3("material.diffuse", material.diffuse);
+	shader->setVec3("material.specular", material.specular);
+	shader->setFloat("material.shininess", material.shininess);
 }
