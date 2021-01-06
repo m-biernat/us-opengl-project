@@ -255,7 +255,7 @@ void setupObjects()
 	float maxExtent = glm::max(glm::max(extent.x, extent.y), extent.z);
 	modelScale = vec3(7.0 / maxExtent);
 
-	terrain = new Terrain(128, 100.0f, 0.5f);
+	terrain = new Terrain(256, 200.0f, 1.1f, 4);
 
 	skybox = new Skybox();
 }
@@ -291,12 +291,12 @@ void render()
 	float rot = 0.5f;
 	mat4 modelMatrix = mat4(1.0f);
 
+	modelMatrix = translate(modelMatrix, vec3(0.0f, 5.0f, -15.0f));
 	modelMatrix = scale(modelMatrix, modelScale);
 	modelMatrix = rotate(modelMatrix, radians(rotationAngles.z), vec3(0.0f, 0.0f, 1.0f));
 	modelMatrix = rotate(modelMatrix, radians(rotationAngles.y += rot), vec3(0.0f, 1.0f, 0.0f));
 	modelMatrix = rotate(modelMatrix, radians(rotationAngles.x), vec3(1.0f, 0.0f, 0.0f));
 	modelMatrix = translate(modelMatrix, -model->getCentroid());
-	modelMatrix = translate(modelMatrix, vec3(0.0f, 2.5f, 0.0f));
 
 	defaultShader->setMat4("modelMatrix", modelMatrix);
 

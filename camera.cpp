@@ -6,7 +6,7 @@
 
 using namespace glm;
 
-#define CAMERA_POSITION vec3(0.0f, 1.0f, 0.0f)
+#define CAMERA_POSITION vec3(0.0f, 5.0f, 0.0f)
 #define CAMERA_FRONT vec3(0.0f, 0.0f, -1.0f)
 #define CAMERA_UP vec3(0.0f, 1.0f, 0.0f)
 

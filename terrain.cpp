@@ -1,15 +1,22 @@
 ﻿#include <glm/gtc/matrix_transform.hpp>
 
 #include <iostream>
+#include <random>
 
 #include "terrain.h"
 
 using namespace std;
 using namespace glm;
 
-Terrain::Terrain(int size, float sizeScale, float heightScale)
+Terrain::Terrain(int size, float sizeScale, float heightScale, int octaves)
 {
 	this->size = size;
+	this->octaves = octaves;
+
+	default_random_engine generator;
+	uniform_int_distribution<int> random(1, INT_MAX);
+
+	pn = new PerlinNoise(random(generator));
 
 	generateData();
 	setupBuffers();
@@ -52,8 +59,11 @@ void Terrain::generateData()
 	{
 		for (int j = 0; j < size; j++)
 		{
-			vertices.push_back(vec3(x, y, 0.0f));
-			//vertices.push_back(pixels[size * i + j] * heightScale);
+			vec2 p = vec2(j / (float)size, i / (float)size);
+			float height = getHeight(getHeight(p) + p); // domain warping 
+			
+			vertices.push_back(vec3(x, y, height));
+			
 			x += step;
 		}
 		x = -1.0f;
@@ -185,4 +195,20 @@ void Terrain::setupBuffers()
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(int), reinterpret_cast<GLuint*>(&indices[0]), GL_STATIC_DRAW);
 
 	glBindVertexArray(0);
+}
+
+float Terrain::getHeight(vec2 p)
+{
+	float frequency = 0.2;
+	float amplitude = 3;
+	float noise = 0;
+
+	for (int i = 0; i < octaves; i++)
+	{
+		noise += ((pn->noise(p.x * frequency * 10, p.y * frequency * 10, 1.0) * 2) - 1) * amplitude;
+		amplitude *= 0.5;
+		frequency *= 2;
+	}
+
+	return noise;
 }
