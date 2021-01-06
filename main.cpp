@@ -27,7 +27,7 @@ using namespace glm;
 #define ANTI_ALIASING_SAMPLES 4
 #define TITLE "pwwg-terrain M. Biernat, A. Hosumbek"
 
-#define NUM_OF_TEX_OBJ 4
+#define NUM_OF_TEX_OBJ 6
 
 //******************************************************************************************
 
@@ -48,13 +48,13 @@ GLuint texObj[NUM_OF_TEX_OBJ];
 mat4 projMatrix;
 mat4 viewMatrix;
 
-DirectLight directLight(vec3(0.0f, -0.5f, -1.0f), vec3(0.1f), vec3(0.7f), vec3(0.3f));
+DirectLight directLight(vec3(0.0f, -0.5f, -1.0f), vec3(0.2f), vec3(0.8f), vec3(0.3f));
 PointLight pointLight(vec3(0.0f, 0.0f, 10.0f), vec3(0.1f), vec3(1.0f) * 2.0f, vec3(0.7f), 1.0f, 0.09f, 0.032f);
 vec3 pointLightPosition = pointLight.position;
 
 vec3 ambientLight = vec3(0.2f);
 
-Material objectMaterial(vec3(1.0f), vec3(1.0f), 83.2f);
+Material objectMaterial(vec3(0.6266f, 0.4537f, 0.0481f), vec3(1.0f), 250.0f);
 Material terrainMaterial;
 
 
@@ -217,15 +217,17 @@ void setupTextures()
 {
 	glGenTextures(NUM_OF_TEX_OBJ, texObj);
 
-	Texture::loadTexture(texObj[0], L"textures/diffuse.jpg");
-	Texture::loadTexture(texObj[1], L"textures/specular.jpg");
-	Texture::loadTexture(texObj[2], L"textures/diffuse.png");
-	Texture::loadTexture(texObj[3], L"textures/specular.png");
+	Texture::loadTexture(texObj[0], L"textures/fabricDiff.jpg");
+	Texture::loadTexture(texObj[1], L"textures/fabricSpec.jpg");
+	Texture::loadTexture(texObj[2], L"textures/fabricNorm.jpg");
+	Texture::loadTexture(texObj[3], L"textures/sandDiff.jpg");
+	Texture::loadTexture(texObj[4], L"textures/sandSpec.jpg");
+	Texture::loadTexture(texObj[5], L"textures/sandNorm.jpg");
 }
 
 void setupObjects()
 {
-	terrain = new Terrain(128, 50.0f, 0.5f);
+	terrain = new Terrain(128, 100.0f, 0.5f);
 
 	model = new Model("models/monkey.obj");
 
@@ -272,7 +274,7 @@ void render()
 	setMaterials(defaultShader, objectMaterial);
 
 	defaultShader->setBool("texturing", true);
-	defaultShader->setVec2("tiling", vec2(8, 8));
+	defaultShader->setVec2("tiling", vec2(2, 2));
 
 	defaultShader->setInt("diffuseTex", 0);
 	glActiveTexture(GL_TEXTURE0 + 0);
@@ -281,6 +283,10 @@ void render()
 	defaultShader->setInt("specularTex", 1);
 	glActiveTexture(GL_TEXTURE0 + 1);
 	glBindTexture(GL_TEXTURE_2D, texObj[1]);
+
+	defaultShader->setInt("normalTex", 2);
+	glActiveTexture(GL_TEXTURE0 + 2);
+	glBindTexture(GL_TEXTURE_2D, texObj[2]);
 
 	model->draw();
 
@@ -300,11 +306,15 @@ void render()
 
 	terrainShader->setInt("diffuseTex", 0);
 	glActiveTexture(GL_TEXTURE0 + 0);
-	glBindTexture(GL_TEXTURE_2D, texObj[2]);
+	glBindTexture(GL_TEXTURE_2D, texObj[3]);
 
 	terrainShader->setInt("specularTex", 1);
 	glActiveTexture(GL_TEXTURE0 + 1);
-	glBindTexture(GL_TEXTURE_2D, texObj[3]);
+	glBindTexture(GL_TEXTURE_2D, texObj[4]);
+
+	terrainShader->setInt("normalTex", 2);
+	glActiveTexture(GL_TEXTURE0 + 2);
+	glBindTexture(GL_TEXTURE_2D, texObj[5]);
 
 	terrain->draw();
 }
