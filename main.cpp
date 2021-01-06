@@ -15,9 +15,10 @@
 
 #include "time.cpp"
 #include "camera.cpp"
-#include "terrain.h"
 #include "lighting.h"
 #include "material.h"
+#include "terrain.h"
+#include "skybox.h"
 
 using namespace std;
 using namespace glm;
@@ -40,12 +41,15 @@ bool normalDebug = false;
 
 Shader* defaultShader;
 Shader* terrainShader;
+Shader* skyboxShader;
 Shader* debugShader;
 
-Terrain* terrain;
 Model* model;
+Terrain* terrain;
+Skybox* skybox;
 
 GLuint texObj[NUM_OF_TEX_OBJ];
+GLuint texCube;
 
 mat4 projMatrix;
 mat4 viewMatrix;
@@ -128,6 +132,8 @@ int main()
 
 	defaultShader = new Shader("shaders/default.vert", "shaders/default.frag");
 	terrainShader = new Shader("shaders/terrain.vert", "shaders/terrain.frag");
+	skyboxShader = new Shader("shaders/skybox.vert", "shaders/skybox.frag");
+
 	debugShader = new Shader("shaders/debug.vert", "shaders/debug.frag", "shaders/debug.geom");
 
 	setupTextures();
@@ -226,36 +232,53 @@ void setupTextures()
 	Texture::loadTexture(texObj[3], L"textures/sandDiff.jpg");
 	Texture::loadTexture(texObj[4], L"textures/sandSpec.jpg");
 	Texture::loadTexture(texObj[5], L"textures/sandNorm.jpg");
+
+	glGenTextures(1, &texCube);
+
+	const wchar_t* cubemapFilename[6] = { 
+		L"textures/skybox/right.jpg", L"textures/skybox/left.jpg",
+		L"textures/skybox/top.jpg", L"textures/skybox/bottom.jpg",
+		L"textures/skybox/front.jpg", L"textures/skybox/back.jpg" 
+	};
+
+	Texture::loadCubemap(texCube, cubemapFilename);
 }
 
 void setupObjects()
 {
-	terrain = new Terrain(128, 100.0f, 0.5f);
-
 	model = new Model("models/monkey.obj");
 
 	vec3 extent = abs(model->getBBmax() - model->getBBmin());
 	float maxExtent = glm::max(glm::max(extent.x, extent.y), extent.z);
 	modelScale = vec3(7.0 / maxExtent);
+
+	terrain = new Terrain(128, 100.0f, 0.5f);
+
+	skybox = new Skybox();
 }
 
 void cleanup()
 {
 	glDeleteProgram(defaultShader->ID);
 	glDeleteProgram(terrainShader->ID);
+	glDeleteProgram(skyboxShader->ID);
 	glDeleteProgram(debugShader->ID);
+	
 	delete(defaultShader);
 	delete(terrainShader);
+	delete(skyboxShader);
 	delete(debugShader);
 	
 	glDeleteTextures(NUM_OF_TEX_OBJ, texObj);
 
-	delete(terrain);
 	delete(model);
+	delete(terrain);
+	delete(skybox);
 }
 
 void render()
 {
+	// Renderowanie obiektu
 	defaultShader->use();
 
 	defaultShader->setMat4("projectionMatrix", projMatrix);
@@ -305,6 +328,9 @@ void render()
 		model->draw();
 	}
 
+	glBindTexture(GL_TEXTURE_2D, 0);
+
+	// Renderowanie terenu
 	terrainShader->use();
 
 	terrainShader->setMat4("projectionMatrix", projMatrix);
@@ -341,6 +367,22 @@ void render()
 
 		terrain->draw();
 	}
+
+	glBindTexture(GL_TEXTURE_2D, 0);
+
+	// Renderowanie skyboxa
+	skyboxShader->use();
+
+	skyboxShader->setMat4("projMatrix", projMatrix);
+	skyboxShader->setMat4("viewMatrix", viewMatrix);
+
+	//skyboxShader->setInt("skyboxTex", 0);
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, texCube);
+
+	skybox->draw();
+
+	glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
 }
 
 void setMaterials(Shader* shader, Material& material)

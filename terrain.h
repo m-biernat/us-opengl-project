@@ -30,7 +30,6 @@ private:
 
 	GLuint vao;
 	GLuint buffers[4];
-	GLuint textures[2];
 
 	int endPrimitive;
 	GLuint indicesNumber;

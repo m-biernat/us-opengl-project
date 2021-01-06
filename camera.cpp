@@ -45,7 +45,7 @@ public:
 
 	mat4 perspective()
 	{
-		return glm::perspective(radians(fov), aspectRatio, 0.1f, 100.0f);
+		return glm::perspective(radians(fov), aspectRatio, 0.1f, 250.0f);
 	}
 
 	void calculateAspectRatio(int width, int height)

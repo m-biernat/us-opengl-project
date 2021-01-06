@@ -1,9 +1,5 @@
-﻿#include <GL/glew.h>
-#include <GLFW/glfw3.h>
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
+﻿#include <glm/gtc/matrix_transform.hpp>
 
-#include <vector>
 #include <iostream>
 
 #include "terrain.h"
@@ -34,8 +30,14 @@ Terrain::~Terrain()
 
 void Terrain::draw()
 {
+	glEnable(GL_PRIMITIVE_RESTART);
+	glPrimitiveRestartIndex(endPrimitive);
+
 	glBindVertexArray(vao);
 	glDrawElements(GL_TRIANGLE_STRIP, indicesNumber, GL_UNSIGNED_INT, 0);
+
+	glDisable(GL_PRIMITIVE_RESTART);
+
 	glBindVertexArray(0);
 }
 
@@ -160,7 +162,7 @@ void Terrain::setupBuffers()
 
 	glGenBuffers(4, buffers);
 
-	// VBO dla wierzcho�k�w
+	// VBO dla wierzchołków
 	glBindBuffer(GL_ARRAY_BUFFER, buffers[0]);
 	glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(vec3), reinterpret_cast<GLfloat*>(&vertices[0]), GL_STATIC_DRAW);
 	glEnableVertexAttribArray(0);
@@ -172,17 +174,15 @@ void Terrain::setupBuffers()
 	glEnableVertexAttribArray(1);
 	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, 0);
 
-	// VBO dla koordynat�w tekstur
+	// VBO dla koordynatów tekstur
 	glBindBuffer(GL_ARRAY_BUFFER, buffers[2]);
 	glBufferData(GL_ARRAY_BUFFER, textureUVs.size() * sizeof(vec2), reinterpret_cast<GLfloat*>(&textureUVs[0]), GL_STATIC_DRAW);
 	glEnableVertexAttribArray(2);
 	glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 0, 0);
 
-	// VBO dla indeks�w
+	// VBO dla indeksów
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, buffers[3]);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(int), reinterpret_cast<GLuint*>(&indices[0]), GL_STATIC_DRAW);
-	glEnable(GL_PRIMITIVE_RESTART);			// Włączenie resetowania prymitywu
-	glPrimitiveRestartIndex(endPrimitive);	// Indeks oznaczający koniec prymitywu
 
 	glBindVertexArray(0);
 }

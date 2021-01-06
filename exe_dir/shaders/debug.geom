@@ -22,7 +22,7 @@ void GenerateLine(int index)
 
 void main()
 {
-    GenerateLine(0); // first vertex normal
-    GenerateLine(1); // second vertex normal
-    GenerateLine(2); // third vertex normal
+    GenerateLine(0);
+    GenerateLine(1);
+    GenerateLine(2);
 }

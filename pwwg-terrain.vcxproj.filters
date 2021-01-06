@@ -43,6 +43,9 @@
     <ClCompile Include="terrain.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="skybox.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="exe_dir\shaders\default.frag">
@@ -66,6 +69,12 @@
     <None Include="exe_dir\shaders\debug.vert">
       <Filter>Shaders</Filter>
     </None>
+    <None Include="exe_dir\shaders\skybox.frag">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="exe_dir\shaders\skybox.vert">
+      <Filter>Shaders</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="mesh.h">
@@ -84,6 +93,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="material.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="skybox.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
