@@ -159,6 +159,9 @@
   <ItemGroup>
     <None Include="exe_dir\shaders\default.frag" />
     <None Include="exe_dir\shaders\default.vert" />
+    <None Include="exe_dir\shaders\debug.frag" />
+    <None Include="exe_dir\shaders\debug.geom" />
+    <None Include="exe_dir\shaders\debug.vert" />
     <None Include="exe_dir\shaders\terrain.frag" />
     <None Include="exe_dir\shaders\terrain.vert" />
   </ItemGroup>

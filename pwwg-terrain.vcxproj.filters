@@ -57,6 +57,15 @@
     <None Include="exe_dir\shaders\terrain.vert">
       <Filter>Shaders</Filter>
     </None>
+    <None Include="exe_dir\shaders\debug.frag">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="exe_dir\shaders\debug.geom">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="exe_dir\shaders\debug.vert">
+      <Filter>Shaders</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="mesh.h">

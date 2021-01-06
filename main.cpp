@@ -36,9 +36,11 @@ Camera camera(static_cast<float>(WIDTH) / HEIGHT);
 MousePosition mousePosition(WIDTH, HEIGHT);
 
 bool wireframe = false;
+bool normalDebug = false;
 
 Shader* defaultShader;
 Shader* terrainShader;
+Shader* debugShader;
 
 Terrain* terrain;
 Model* model;
@@ -52,11 +54,8 @@ DirectLight directLight(vec3(0.0f, -0.5f, -1.0f), vec3(0.2f), vec3(0.8f), vec3(0
 PointLight pointLight(vec3(0.0f, 0.0f, 10.0f), vec3(0.1f), vec3(1.0f) * 2.0f, vec3(0.7f), 1.0f, 0.09f, 0.032f);
 vec3 pointLightPosition = pointLight.position;
 
-vec3 ambientLight = vec3(0.2f);
-
 Material objectMaterial(vec3(0.6266f, 0.4537f, 0.0481f), vec3(1.0f), 250.0f);
 Material terrainMaterial;
-
 
 glm::vec3 rotationAngles = glm::vec3(0.0, -45.0, 0.0); // katy rotacji wokol poszczegolnych osi
 glm::vec3 modelScale = glm::vec3(1.0f, 1.0f, 1.0f);
@@ -129,6 +128,7 @@ int main()
 
 	defaultShader = new Shader("shaders/default.vert", "shaders/default.frag");
 	terrainShader = new Shader("shaders/terrain.vert", "shaders/terrain.frag");
+	debugShader = new Shader("shaders/debug.vert", "shaders/debug.frag", "shaders/debug.geom");
 
 	setupTextures();
 	setupObjects();
@@ -182,6 +182,9 @@ void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
 
 	if (action == GLFW_PRESS && key == GLFW_KEY_F1)
 		wireframe = !wireframe;
+
+	if (action == GLFW_PRESS && key == GLFW_KEY_F2)
+		normalDebug = !normalDebug;
 }
 
 void mouseCallback(GLFWwindow* window, double xpos, double ypos)
@@ -240,8 +243,10 @@ void cleanup()
 {
 	glDeleteProgram(defaultShader->ID);
 	glDeleteProgram(terrainShader->ID);
+	glDeleteProgram(debugShader->ID);
 	delete(defaultShader);
 	delete(terrainShader);
+	delete(debugShader);
 	
 	glDeleteTextures(NUM_OF_TEX_OBJ, texObj);
 
@@ -290,6 +295,15 @@ void render()
 
 	model->draw();
 
+	if (normalDebug)
+	{
+		debugShader->use();
+		debugShader->setMat4("projMatrix", projMatrix);
+		debugShader->setMat4("viewMatrix", viewMatrix);
+		debugShader->setMat4("modelMatrix", modelMatrix);
+
+		model->draw();
+	}
 
 	terrainShader->use();
 
@@ -317,6 +331,16 @@ void render()
 	glBindTexture(GL_TEXTURE_2D, texObj[5]);
 
 	terrain->draw();
+
+	if (normalDebug)
+	{
+		debugShader->use();
+		debugShader->setMat4("projMatrix", projMatrix);
+		debugShader->setMat4("viewMatrix", viewMatrix);
+		debugShader->setMat4("modelMatrix", terrain->modelMatrix);
+
+		terrain->draw();
+	}
 }
 
 void setMaterials(Shader* shader, Material& material)
