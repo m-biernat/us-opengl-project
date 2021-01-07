@@ -85,6 +85,7 @@ public:
 		yaw += xOffset;
 		pitch += yOffset;
 
+		// ogranicza kat obrotu gora-dol
 		if (pitch > 89.0f)
 			pitch = 89.0f;
 		if (pitch < -89.0f)

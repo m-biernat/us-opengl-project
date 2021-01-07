@@ -11,8 +11,11 @@ using namespace glm;
 Terrain::Terrain(int size, float sizeScale, float heightScale, int octaves)
 {
 	this->size = size;
+	this->sizeScale = sizeScale;
+	this->heightScale = heightScale;
 	this->octaves = octaves;
 
+	// Generowanie losowego seeda z wykorzystaniem <random> C++ 11
 	default_random_engine generator;
 	uniform_int_distribution<int> random(1, INT_MAX);
 
@@ -26,7 +29,7 @@ Terrain::Terrain(int size, float sizeScale, float heightScale, int octaves)
 	modelMatrix = mat4(1.0f);
 	modelMatrix = translate(modelMatrix, vec3(0.0f, 0.0f, 0.0f));
 	modelMatrix = rotate(modelMatrix, radians(-90.0f), vec3(1.0f, 0.0f, 0.0f));
-	modelMatrix = scale(modelMatrix, vec3(sizeScale, sizeScale, heightScale));
+	//modelMatrix = scale(modelMatrix, vec3(sizeScale, sizeScale, heightScale));
 }
 
 Terrain::~Terrain()
@@ -50,6 +53,8 @@ void Terrain::draw()
 
 void Terrain::generateData()
 {
+	// Generowanie siatki wierzhołków i indeksów skopiowaliśmy z 5 semestru
+
 	#pragma region Generowanie siatki wierzchołków
 
 	float step = 2.0f / (size - 1);
@@ -62,7 +67,7 @@ void Terrain::generateData()
 			vec2 p = vec2(j / (float)size, i / (float)size);
 			float height = getHeight(getHeight(p) + p); // domain warping 
 			
-			vertices.push_back(vec3(x, y, height));
+			vertices.push_back(vec3(x * sizeScale, y * sizeScale, height * heightScale));
 			
 			x += step;
 		}
@@ -103,18 +108,16 @@ void Terrain::generateData()
 	vector<ivec3> triangles;
 	int i = 0, loops = 0;
 	int skip = size - 1;
+	int endLoop = (size - 1) * size;
 
-	cout << endPrimitive << endl << indices.size() << endl;
-
-	while (i < indices.size() - size)
+	// Tworzenie listy trójkątów, do liczenia normali
+	while (loops < endLoop)
 	{
-		if (indices[i] == endPrimitive)
-		{
-			//cout << endl << i << endl;
+		if (indices[i] == endPrimitive)	// Pomiń prymityw
 			i++;
-		}
 
-		if (loops != skip)
+		// Wyznacza dwa trójkąty (quada) i pomija przy ostatnim, żeby nie uwzględniać prymitywu
+		if (loops != skip) 
 		{
 			ivec3 t1 = ivec3(indices[i + 1], indices[i], indices[i + 2]);
 			ivec3 t2 = ivec3(indices[i + 2], indices[i + 3], indices[i + 1]);
@@ -130,6 +133,9 @@ void Terrain::generateData()
 		loops++;
 		i += 2;
 	}
+
+	// Liczenie normali metodą Inigo Quileza
+	// https://www.iquilezles.org/www/articles/normals/normals.htm
 
 	for (int i = 0; i < vertices.size(); i++)
 		normals.push_back(vec3(0.0f));
@@ -191,6 +197,8 @@ void Terrain::setupBuffers()
 
 float Terrain::getHeight(vec2 p)
 {
+	// Wielooktawowy szum Improved Perlin zeskalowany do zakresu [-1;1]
+
 	float frequency = 0.2;
 	float amplitude = 3;
 	float noise = 0;

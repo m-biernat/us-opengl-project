@@ -152,7 +152,6 @@
     <ClCompile Include="mesh.cpp" />
     <ClCompile Include="model.cpp" />
     <ClCompile Include="noise.cpp" />
-    <ClCompile Include="object.cpp" />
     <ClCompile Include="skybox.cpp" />
     <ClCompile Include="terrain.cpp" />
     <ClCompile Include="texture.cpp" />

@@ -27,6 +27,9 @@ public:
 private:
 	int size;
 
+	float sizeScale;
+	float heightScale;
+
 	vector<vec3> vertices;
 	vector<vec3> normals;
 	vector<int> indices;

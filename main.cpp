@@ -1,4 +1,7 @@
-﻿#include <GL/glew.h>
+﻿// Projekt na zaliczenie przedmiotu Programowanie warstwy wizualnej gry
+// Wykonanie: Michał Biernat, Anna Hosumbek INŻ IV PGK 1
+
+#include <GL/glew.h>
 #include <GLFW/glfw3.h>
 
 #include <glm/glm.hpp>
@@ -123,10 +126,10 @@ int main()
 
 	glShowInfo();
 
-	glEnable(GL_MULTISAMPLE);
-	glEnable(GL_DEPTH_TEST);
-	glEnable(GL_CULL_FACE);
-	glfwSwapInterval(1);	// v-sync on
+	glEnable(GL_MULTISAMPLE); // Włącza antyaliasing 
+	glEnable(GL_DEPTH_TEST);  // Włącza test głębi
+	glEnable(GL_CULL_FACE);	  // Rysuje wyłącznie widoczne elementy
+	glfwSwapInterval(1);	  // Włącza synchronizacje pionową
 	glClearColor(0.5f, 0.5f, 0.5f, 1.0f);
 
 
@@ -142,7 +145,7 @@ int main()
 
 	while (!glfwWindowShouldClose(window))
 	{
-		frameTime.update(glfwGetTime());
+		frameTime.update(glfwGetTime()); // Przechowuje informacje o czasie między klatkami
 
 		processInput(window);
 
@@ -162,7 +165,7 @@ int main()
 		glfwPollEvents();
 	}
 
-	cleanup();
+	cleanup(); // Czyści pamięć i bufory po zakończeniu działania programu
 
 	glfwDestroyWindow(window);
 	glfwTerminate();
@@ -187,15 +190,16 @@ void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
 		glfwSetWindowShouldClose(window, GLFW_TRUE);
 
 	if (action == GLFW_PRESS && key == GLFW_KEY_F1)
-		wireframe = !wireframe;
+		wireframe = !wireframe;		// Ustawienie renderowania w trybie siatki
 
 	if (action == GLFW_PRESS && key == GLFW_KEY_F2)
-		normalDebug = !normalDebug;
+		normalDebug = !normalDebug;	// Włączenie shadera geometrii rysującego normale
 
 	if (action == GLFW_PRESS && key == GLFW_KEY_LEFT_SHIFT)
-		camera.toggleSpeed();
+		camera.toggleSpeed();		// Zmienia tryb prędkości ruchu kamery
 }
 
+// Wykorzystujemy fubkcje zwrotną myszy do obrotu kamerą po przytrzymaniu PPM
 void mouseCallback(GLFWwindow* window, double xpos, double ypos)
 {
 	mousePosition.Capture((float)xpos, (float)ypos);
@@ -213,6 +217,7 @@ void glShowInfo()
 	cout << "GLSL = " << glGetString(GL_SHADING_LANGUAGE_VERSION) << endl;
 }
 
+// Funkcja sterująca pozycją kamery, działająca w pętli głównej
 void processInput(GLFWwindow* window)
 {
 	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
@@ -255,7 +260,7 @@ void setupObjects()
 	float maxExtent = glm::max(glm::max(extent.x, extent.y), extent.z);
 	modelScale = vec3(7.0 / maxExtent);
 
-	terrain = new Terrain(256, 200.0f, 1.1f, 4);
+	terrain = new Terrain(256, 180.0f, 0.9f, 4);
 
 	skybox = new Skybox();
 }
@@ -305,7 +310,7 @@ void render()
 	setMaterials(defaultShader, objectMaterial);
 
 	defaultShader->setBool("texturing", true);
-	defaultShader->setVec2("tiling", vec2(2, 2));
+	defaultShader->setVec2("tiling", vec2(2));
 
 	defaultShader->setInt("diffuseTex", 0);
 	glActiveTexture(GL_TEXTURE0 + 0);
@@ -345,7 +350,7 @@ void render()
 	setMaterials(terrainShader, terrainMaterial);
 
 	terrainShader->setBool("texturing", true);
-	terrainShader->setVec2("tiling", vec2(8, 8));
+	terrainShader->setVec2("tiling", vec2(0.1));
 
 	terrainShader->setInt("diffuseTex", 0);
 	glActiveTexture(GL_TEXTURE0 + 0);

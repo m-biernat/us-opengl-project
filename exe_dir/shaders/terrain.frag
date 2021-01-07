@@ -48,9 +48,13 @@ uniform sampler2D normalTex;
 vec3 diffuseColor;
 vec3 specularColor;
 
+// Standardowe funkcje obliczaj¹ce œwiat³o w modelu Blinna-Phonga
+// bardzo podobne do tych robionych w zestawach na 5 semestrze
 vec3 CalcDirectLight(DirectLight light, vec3 norm, vec3 viewDir);
 vec3 CalcPointLight(PointLight light, vec3 norm, vec3 viewDir);
 
+// Funkcja do normalmappingu licz¹ca tangent bitangent normal w locie
+// Znaleziona w shaderze PBR na tej stronie https://learnopengl.com/PBR/Lighting
 vec3 getNormalFromMap();
 
 void main()
