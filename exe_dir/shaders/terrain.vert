@@ -8,7 +8,6 @@ uniform vec2 tiling;
 
 layout (location = 0) in vec4 vPosition;
 layout (location = 1) in vec3 vNormal;
-layout (location = 2) in vec2 vTexCoords;
 
 out vec3 position;
 out vec3 normal;

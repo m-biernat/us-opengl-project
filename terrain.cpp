@@ -32,7 +32,7 @@ Terrain::Terrain(int size, float sizeScale, float heightScale, int octaves)
 Terrain::~Terrain()
 {
 	glDeleteVertexArrays(1, &vao);
-	glDeleteBuffers(4, buffers);
+	glDeleteBuffers(BUFFERS_COUNT, buffers);
 }
 
 void Terrain::draw()
@@ -72,63 +72,6 @@ void Terrain::generateData()
 
 	#pragma endregion
 
-	#pragma region Generowanie normali
-
-	int lastRow = size * (size - 1);
-	int size_d = size - 1;
-	int lastCol = size_d;
-
-	normals.push_back(normalize((vec3(vertices[0].z, vertices[size].z, 2.0f))));
-
-	for (int i = 1; i < vertices.size(); i++)
-	{
-		float hL = -1.0f, hR = -1.0f, hU = -1.0f, hD = -1.0f;
-
-		if (i % size != 0)				// Bez pierwszej kolumny
-			hL = vertices[i - 1].z;
-		if (i % lastCol != 0)			// Bez ostatniej kolumny
-			hR = vertices[i + 1].z;
-		else
-			lastCol += size;
-		if (i > size_d)					// Bez pierzwszego rzędu
-			hU = vertices[i - size].z;
-		if (i < lastRow)				// Bez ostatniego rzędu
-			hD = vertices[i + size].z;
-
-		vec3 norm = vec3(hL - hR, hD - hU, 2.0f);
-
-		if (hL < 0)
-			norm.x = hR;
-		if (hR < 0)
-			norm.x = hL;
-		if (hU < 0)
-			norm.y = hD;
-		if (hD < 0)
-			norm.y = hU;
-
-		normals.push_back(normalize(norm));
-	}
-
-	#pragma endregion
-
-	#pragma region Generowanie koordynatów tekstur
-
-	step = 1.0f / (size - 1);
-	x = 0.0f, y = 1.0f;
-
-	for (int i = 0; i < size; i++)
-	{
-		for (int j = 0; j < size; j++)
-		{
-			textureUVs.push_back(vec2(x, y));
-			x += step;
-		}
-		x = -1.0f;
-		y -= step;
-	}
-
-	#pragma endregion
-
 	#pragma region Generowanie indeksów
 
 	int verts = (size - 1) * size;
@@ -154,6 +97,62 @@ void Terrain::generateData()
 	indicesNumber = (GLuint)indices.size();
 
 	#pragma endregion
+
+	#pragma region Generowanie normali
+
+	vector<ivec3> triangles;
+	int i = 0, loops = 0;
+	int skip = size - 1;
+
+	cout << endPrimitive << endl << indices.size() << endl;
+
+	while (i < indices.size() - size)
+	{
+		if (indices[i] == endPrimitive)
+		{
+			//cout << endl << i << endl;
+			i++;
+		}
+
+		if (loops != skip)
+		{
+			ivec3 t1 = ivec3(indices[i + 1], indices[i], indices[i + 2]);
+			ivec3 t2 = ivec3(indices[i + 2], indices[i + 3], indices[i + 1]);
+
+			triangles.push_back(t1);
+			triangles.push_back(t2);
+
+			//cout << "(" << i << ") " << t1.x << " " << t1.y << " " << t1.z << ", " << t2.x << " " << t2.y << " " << t2.z << " ;";
+		}
+		else
+			skip += size;
+
+		loops++;
+		i += 2;
+	}
+
+	for (int i = 0; i < vertices.size(); i++)
+		normals.push_back(vec3(0.0f));
+
+	for (int i = 0; i < triangles.size(); i++)
+	{
+		const int ia = triangles[i].x;
+		const int ib = triangles[i].y;
+		const int ic = triangles[i].z;
+
+		const vec3 e1 = vertices[ia] - vertices[ib];
+		const vec3 e2 = vertices[ic] - vertices[ib];
+		const vec3 no = cross(e1, e2);
+
+		normals[ia] += no;
+		normals[ib] += no;
+		normals[ic] += no;
+	}
+
+	for (int i = 0; i < normals.size(); i++)
+		normals[i] = normalize(normals[i]);
+
+	#pragma endregion
 }
 
 void Terrain::clearData()
@@ -161,7 +160,6 @@ void Terrain::clearData()
 	// Czyszczenie pamięci
 	vector<vec3>().swap(vertices);
 	vector<vec3>().swap(normals);
-	vector<vec2>().swap(textureUVs);
 	vector<int>().swap(indices);
 }
 
@@ -170,7 +168,7 @@ void Terrain::setupBuffers()
 	glGenVertexArrays(1, &vao);
 	glBindVertexArray(vao);
 
-	glGenBuffers(4, buffers);
+	glGenBuffers(BUFFERS_COUNT, buffers);
 
 	// VBO dla wierzchołków
 	glBindBuffer(GL_ARRAY_BUFFER, buffers[0]);
@@ -184,14 +182,8 @@ void Terrain::setupBuffers()
 	glEnableVertexAttribArray(1);
 	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, 0);
 
-	// VBO dla koordynatów tekstur
-	glBindBuffer(GL_ARRAY_BUFFER, buffers[2]);
-	glBufferData(GL_ARRAY_BUFFER, textureUVs.size() * sizeof(vec2), reinterpret_cast<GLfloat*>(&textureUVs[0]), GL_STATIC_DRAW);
-	glEnableVertexAttribArray(2);
-	glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 0, 0);
-
 	// VBO dla indeksów
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, buffers[3]);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, buffers[2]);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(int), reinterpret_cast<GLuint*>(&indices[0]), GL_STATIC_DRAW);
 
 	glBindVertexArray(0);

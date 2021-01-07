@@ -11,6 +11,8 @@
 using namespace std;
 using namespace glm;
 
+#define BUFFERS_COUNT 3
+
 class Terrain
 {
 public:
@@ -27,11 +29,10 @@ private:
 
 	vector<vec3> vertices;
 	vector<vec3> normals;
-	vector<vec2> textureUVs;
 	vector<int> indices;
 
 	GLuint vao;
-	GLuint buffers[4];
+	GLuint buffers[BUFFERS_COUNT];
 
 	int endPrimitive;
 	GLuint indicesNumber;
